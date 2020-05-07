@@ -3,6 +3,8 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
 
+from datetime import datetime
+
 from flask import Flask, jsonify
 
 engine = create_engine("sqlite:///Resources/hawaii.sqlite")
@@ -41,6 +43,10 @@ def precipitation():
 
     session.close()
     precipitation_data = []
+    precip_dict = {}
+    precip_dict["Result"] = "Daily Average Precipitation"
+    precipitation_data.append(precip_dict)
+    
     for result in precip_results:
         precip_dict = {}
         precip_dict["date"] = result.date
@@ -57,6 +63,10 @@ def stations():
 
     session.close()
     station_data = []
+    station_dict = {}
+    station_dict["Result"] = "Station Information"
+    station_data.append(station_dict)
+
     for result in station_results:
         station_dict = {}
         station_dict["station"] = result.station
@@ -88,6 +98,10 @@ def tobs():
 
     session.close()
     tobs_data = []
+    tobs_dict = {}
+    tobs_dict["Result"] = "Temperature Observation for Station: " + most_active_station
+    tobs_data.append(tobs_dict)
+
     for result in tobs_results:
         tobs_dict = {}
         tobs_dict["date"] = result.date
@@ -98,6 +112,21 @@ def tobs():
 
 @app.route("/api/v1.0/<start>")
 def start_date(start):
+    temp_stats = []
+    try:
+        datetime.strptime(start, '%Y-%m-%d')
+    except ValueError:
+        temp_dict = {}
+        temp_dict["Error"] = "Date is not in a valid format"
+        temp_stats.append(temp_dict)
+        return jsonify(temp_stats)
+
+    if (len(start) != 10):
+        temp_dict = {}
+        temp_dict["Error"] = "Date is not in a valid format"
+        temp_stats.append(temp_dict)
+        return jsonify(temp_stats)
+
     session = Session(engine)
     temp_results = session.query(Measurement.date,func.min(Measurement.tobs),func.max(Measurement.tobs),func.avg(Measurement.tobs)).\
         filter(Measurement.date >= start).\
@@ -105,18 +134,51 @@ def start_date(start):
         order_by(Measurement.date).all()
 
     session.close()
-    temp_stats = []
-    for result in temp_results:
+    rec_count = len(temp_results)
+    if rec_count > 0:
         temp_dict = {}
-        temp_dict["date"] = result[0]
-        temp_dict["TMIN"] = result[1]
-        temp_dict["TAVG"] = result[3]
-        temp_dict["TMAX"] = result[2]
+        temp_dict["Result"] = "Information is available from " + start
         temp_stats.append(temp_dict)
+
+        for result in temp_results:
+            temp_dict = {}
+            temp_dict["date"] = result[0]
+            temp_dict["TMIN"] = result[1]
+            temp_dict["TAVG"] = result[3]
+            temp_dict["TMAX"] = result[2]
+            temp_stats.append(temp_dict)
+
+    else:
+        temp_dict = {}
+        temp_dict["Result"] = "No information is available from " + start
+        temp_stats.append(temp_dict)
+
     return jsonify(temp_stats)
 
 @app.route("/api/v1.0/<start>/<end>")
 def start_end_date(start,end):
+    temp_stats = []
+    try:
+        datetime.strptime(start, '%Y-%m-%d')
+    except ValueError:
+        temp_dict = {}
+        temp_dict["Result"] = "Date is not in a valid format"
+        temp_stats.append(temp_dict)
+        return jsonify(temp_stats)
+    try:
+        datetime.strptime(end, '%Y-%m-%d')
+    except ValueError:
+        temp_dict = {}
+        temp_dict["Result"] = "Date is not in a valid format"
+        temp_stats.append(temp_dict)
+        return jsonify(temp_stats)
+
+    if (len(start) != 10 or len(end) != 10):
+        temp_dict = {}
+        temp_dict["Result"] = "Date is not in a valid format"
+        temp_stats.append(temp_dict)
+        return jsonify(temp_stats)
+
     session = Session(engine)
     temp_results = session.query(Measurement.date,func.min(Measurement.tobs),func.max(Measurement.tobs),func.avg(Measurement.tobs)).\
         filter(Measurement.date >= start).\
@@ -125,14 +187,25 @@ def start_end_date(start,end):
         order_by(Measurement.date).all()
 
     session.close()
-    temp_stats = []
-    for result in temp_results:
+    rec_count = len(temp_results)
+    if rec_count > 0:
         temp_dict = {}
-        temp_dict["date"] = result[0]
-        temp_dict["TMIN"] = result[1]
-        temp_dict["TAVG"] = result[3]
-        temp_dict["TMAX"] = result[2]
+        temp_dict["Result"] = "Information is available from " + start + " to " + end
         temp_stats.append(temp_dict)
+
+        for result in temp_results:
+            temp_dict = {}
+            temp_dict["date"] = result[0]
+            temp_dict["TMIN"] = result[1]
+            temp_dict["TAVG"] = result[3]
+            temp_dict["TMAX"] = result[2]
+            temp_stats.append(temp_dict)
+
+    else:
+        temp_dict = {}
+        temp_dict["Result"] = "No information is available from " + start + " to " + end
+        temp_stats.append(temp_dict)
+
     return jsonify(temp_stats)
 
 if __name__ == "__main__":
