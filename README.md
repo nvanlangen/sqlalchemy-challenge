@@ -53,13 +53,13 @@ SQLAlchemy - Surf's Up
 
     * The data captured was Station, Year, and Avg Temperature
 
-    * Stored the data in a Dataframe.
+    * Stored the data in a Dataframe
 
   * Executed a query to return temperature data for December of each year available
 
     * The data captured was Station, Year, and Avg Temperature
 
-    * Stored the data in a Dataframe.
+    * Stored the data in a Dataframe
 
   * Merged the two Dataframes using an inner join on the Station and Year to eliminate any unmatched records
 
